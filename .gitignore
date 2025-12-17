@@ -1,0 +1,15 @@
+# Python Virtual Environment
+venv/
+env/
+.env
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# Docker Data & Tenant Data (PENTING: Jangan di-commit)
+tenants/
+
+# IDE settings (VSCode, etc)
+.vscode/
+.idea/
