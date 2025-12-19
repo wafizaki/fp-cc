@@ -1,49 +1,39 @@
 # Multi-Tenant FileBrowser Orchestrator
 
-Script Python sederhana untuk men-deploy layanan **FileBrowser** secara otomatis berbasis Docker. Script ini mendukung multi-tenancy dimana setiap user memiliki container dan port terpisah, serta penyimpanan data yang terisolasi.
+Script **Bash** sederhana untuk men-deploy layanan **FileBrowser** secara otomatis berbasis Docker. Script ini mendukung multi-tenancy dimana setiap user memiliki container dan port terpisah, serta penyimpanan data yang terisolasi.
 
 ## Prasyarat (Prerequisites)
 
 Pastikan sistem operasi Anda (USAHAKAN LINUX JANGAN WSL) sudah terinstall:
-1.  **Python 3.8+**
-2.  **Docker Engine** (Pastikan service Docker sudah berjalan)
-3.  User Linux Anda sudah dimasukkan ke grup docker (`sudo usermod -aG docker $USER`).
+1.  **Docker Engine** (Pastikan service Docker sudah berjalan)
+2.  User Linux Anda sudah dimasukkan ke grup docker (`sudo usermod -aG docker $USER`).
+3.  **Bash** (umumnya sudah ada di Linux)
 
 ## Instalasi
 
 1.  **Clone Repository ini**.
 
-2.  **Buat Virtual Environment (Venv)**
-    Agar library python tidak mengotori sistem utama.
+2.  **(Opsional) Tambahkan eksekusi pada script**
     ```bash
-    python3 -m venv venv
+    chmod +x deploy_tenant.sh remove_tenant.sh
     ```
-
-3.  **Aktifkan Venv**
-    Lakukan ini setiap kali ingin menjalankan script.
-    ```bash
-    source venv/bin/activate
-    ```
-    *(Tanda berhasil: muncul tulisan `(venv)` di terminal)*
-    
-    Kemudian lakukan ini untuk mematikan venv
-    ```bash
-    deactivate
-    ```
-
-4.  **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Atau jika manual: `pip install docker`)*
 
 ## Cara Menjalankan
 
 ### 1. Deploy Tenant Baru
-Gunakan argumen `--names` diikuti daftar nama tenant yang ingin dibuat.
+Gunakan script bash berikut untuk membuat tenant baru:
 
 ```bash
-python deploy_tenant.py --names budi siti tono
+./deploy_tenant.sh [--start-port PORT] tenant_a tenant_b ...
+```
+
+Contoh:
+```bash
+./deploy_tenant.sh budi siti tono
+```
+Atau dengan port custom:
+```bash
+./deploy_tenant.sh --start-port 9000 budi siti tono
 ```
 
 ### 2. Akses Aplikasi
@@ -54,3 +44,22 @@ Tenant 1: http://localhost:8000
 Tenant 2: http://localhost:8001
 
 ..dst
+
+Password admin akan muncul di log terminal setelah deploy.
+
+### 3. Menghapus Tenant
+Untuk menghapus container, volume, dan folder tenant:
+
+```bash
+./remove_tenant.sh tenant_a tenant_b ...
+```
+
+Contoh:
+```bash
+./remove_tenant.sh budi siti tono
+```
+
+## Catatan Penting
+- Folder `tenants/` dan seluruh isinya **jangan di-commit ke git** (sudah ada di `.gitignore`).
+- Jika ingin password admin baru, hapus volume docker tenant terkait sebelum deploy ulang (otomatis dilakukan oleh `remove_tenant.sh`).
+- Script ini tidak lagi membutuhkan Python sama sekali.
