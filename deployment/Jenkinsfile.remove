@@ -1,0 +1,74 @@
+pipeline {
+  agent any
+
+  parameters {
+    text(
+      name: 'INLINE_JSON',
+      defaultValue: '',
+      description: 'Kosongkan untuk pakai tenants.json dari repo. Isi JSON di sini untuk remove manual.'
+    )
+    string(
+      name: 'REPO_JSON_PATH',
+      defaultValue: 'tenants.json',
+      description: 'Path tenants.json di repo (dipakai saat INLINE_JSON kosong)'
+    )
+  }
+
+  stages {
+
+    stage('Remove tenants') {
+      steps {
+        script {
+          if (isUnix()) {
+            sh '''
+              set -eux
+              chmod +x ./remove_tenant.sh
+
+              if [ -n "${INLINE_JSON:-}" ]; then
+                TENANTS=$(python - <<'PY'
+                import os, json
+                cfg=json.loads(os.environ["INLINE_JSON"])
+                print(" ".join(cfg.get("tenants", [])))
+                PY
+                )
+              else
+                TENANTS=$(python - <<'PY'
+                import json, os
+                path=os.environ.get("REPO_JSON_PATH","tenants.json")
+                cfg=json.load(open(path))
+                print(" ".join(cfg.get("tenants", [])))
+                PY
+                )
+              fi
+
+              if [ -z "$TENANTS" ]; then
+                echo "Tenant list kosong"
+                exit 1
+              fi
+
+              ./remove_tenant.sh $TENANTS
+            '''
+          } else {
+            powershell '''
+              $json = $env:INLINE_JSON
+
+              if (![string]::IsNullOrWhiteSpace($json)) {
+                $cfg = $json | ConvertFrom-Json
+              } else {
+                $path = $env:REPO_JSON_PATH
+                $cfg = Get-Content $path -Raw | ConvertFrom-Json
+              }
+
+              $tenants = @($cfg.tenants)
+              if ($tenants.Count -eq 0) { throw "Tenant list kosong" }
+
+              if (!(Test-Path .\\remove_tenant.sh)) { throw "remove_tenant.sh not found" }
+
+              bash -lc "chmod +x ./remove_tenant.sh && ./remove_tenant.sh $($tenants -join ' ')"
+            '''
+          }
+        }
+      }
+    }
+  }
+}
