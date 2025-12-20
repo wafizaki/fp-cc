@@ -7,7 +7,7 @@ pipeline {
     text(
       name: 'INLINE_JSON',
       defaultValue: '',
-      description: 'Kosongkan untuk pakai tenants.json dari repo (webhook). Isi JSON di sini untuk remove manual.'
+      description: 'Kosongkan untuk pakai tenants.json dari repo (webhook). Isi JSON di sini untuk deploy manual.'
     )
     string(
       name: 'REPO_JSON_PATH',
@@ -32,6 +32,8 @@ pipeline {
 
           def cfg = new JsonSlurperClassic().parseText(jsonText)
 
+          // Expect:
+          // { "start_port": 9000, "tenants": ["budi","siti"] }
           int startPort = (cfg.start_port ?: 9000) as Integer
           List<String> tenants = (cfg.tenants ?: []).collect { it.toString() }
 
@@ -39,33 +41,36 @@ pipeline {
             error("Tenant list kosong. Pastikan JSON punya field 'tenants' array.")
           }
 
+          // Validasi nama tenant biar aman untuk container/volume name
           tenants.each { t ->
             if (!(t ==~ /^[A-Za-z0-9_-]+$/)) {
               error("Nama tenant tidak valid: '${t}'. Pakai hanya huruf/angka/_/-")
             }
           }
 
-          env.START_PORT = startPort.toString() // (opsional, nggak dipakai di remove)
+          // Simpan untuk stage berikutnya
+          env.START_PORT = startPort.toString()
           env.TENANT_ARGS = tenants.collect { "'${it}'" }.join(' ')
         }
       }
     }
 
-    stage('Remove') {
+    stage('Deploy') {
       steps {
         script {
           if (isUnix()) {
             sh """
               set -eux
-              chmod +x ./remove_tenant.sh
-              ./remove_tenant.sh ${env.TENANT_ARGS}
+              chmod +x ./deploy_tenant.sh
+              ./deploy_tenant.sh --start-port ${env.START_PORT} ${env.TENANT_ARGS}
             """
           } else {
-            // Windows: jalankan lewat bash (Git Bash / WSL). Ini asumsi kamu punya bash di PATH.
+            // Windows: pakai wrapper PowerShell yang kamu rencanakan
             powershell """
+              \$startPort = ${env.START_PORT}
               \$tenants = @(${env.TENANT_ARGS})
-              if (!(Test-Path .\\remove_tenant.sh)) { throw "remove_tenant.sh not found" }
-              bash -lc "chmod +x ./remove_tenant.sh && ./remove_tenant.sh \$($tenants -join ' ')"
+              if (!(Test-Path .\\deploy_tenant.ps1)) { throw "deploy_tenant.ps1 not found" }
+              .\\deploy_tenant.ps1 -StartPort \$startPort @\$tenants
             """
           }
         }
