@@ -102,12 +102,12 @@ for tenant in "${ARGS[@]}"; do
 
   # run container
   CONFIG_VOL="${tenant}_config_vol"
+
   if docker run -d --name "${CONTAINER_NAME}" -p "${CURRENT_PORT}:80" \
-      -v "${FILES_PATH}:/srv:rw" \
-      -v "${VOLUME_NAME}:/database:rw" \
-      -v "${CONFIG_VOL}:/config:rw" \
-      # -v "${CONFIG_PATH}:/config:rw" \
-      filebrowser/filebrowser >/dev/null; then
+    -v "${FILES_PATH}:/srv:rw" \
+    -v "${VOLUME_NAME}:/database:rw" \
+    -v "${CONFIG_VOL}:/config:rw" \
+    filebrowser/filebrowser >/dev/null; then
     echo "$(timestamp) Container started: ${CONTAINER_NAME}"
   else
     echo "$(timestamp) [ERROR] Failed to start container ${CONTAINER_NAME}."
@@ -115,6 +115,21 @@ for tenant in "${ARGS[@]}"; do
     ((CURRENT_PORT++))
     continue
   fi
+
+  # CONFIG_VOL="${tenant}_config_vol"
+  # if docker run -d --name "${CONTAINER_NAME}" -p "${CURRENT_PORT}:80" \
+  #     -v "${FILES_PATH}:/srv:rw" \
+  #     -v "${VOLUME_NAME}:/database:rw" \
+  #     -v "${CONFIG_VOL}:/config:rw" \
+  #     # -v "${CONFIG_PATH}:/config:rw" \
+  #     filebrowser/filebrowser >/dev/null; then
+  #   echo "$(timestamp) Container started: ${CONTAINER_NAME}"
+  # else
+  #   echo "$(timestamp) [ERROR] Failed to start container ${CONTAINER_NAME}."
+  #   echo
+  #   ((CURRENT_PORT++))
+  #   continue
+  # fi
 
   echo "$(timestamp) Waiting up to 5s for container logs to contain credentials..."
 
