@@ -101,10 +101,12 @@ for tenant in "${ARGS[@]}"; do
   echo "$(timestamp) Starting ${tenant} on port ${CURRENT_PORT}..."
 
   # run container
+  CONFIG_VOL="${tenant}_config_vol"
   if docker run -d --name "${CONTAINER_NAME}" -p "${CURRENT_PORT}:80" \
       -v "${FILES_PATH}:/srv:rw" \
       -v "${VOLUME_NAME}:/database:rw" \
-      -v "${CONFIG_PATH}:/config:rw" \
+      -v "${CONFIG_VOL}:/config:rw" \
+      # -v "${CONFIG_PATH}:/config:rw" \
       filebrowser/filebrowser >/dev/null; then
     echo "$(timestamp) Container started: ${CONTAINER_NAME}"
   else
