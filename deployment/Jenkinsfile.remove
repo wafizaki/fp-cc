@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurperClassic
+
 pipeline {
   agent any
 
@@ -5,7 +7,7 @@ pipeline {
     text(
       name: 'INLINE_JSON',
       defaultValue: '',
-      description: 'Kosongkan untuk pakai tenants.json dari repo. Isi JSON di sini untuk remove manual.'
+      description: 'Kosongkan untuk pakai tenants.json dari repo (webhook). Isi JSON di sini untuk remove manual.'
     )
     string(
       name: 'REPO_JSON_PATH',
@@ -16,56 +18,55 @@ pipeline {
 
   stages {
 
-    stage('Remove tenants') {
+    stage('Load tenants config') {
+      steps {
+        script {
+          String jsonText
+          if (params.INLINE_JSON?.trim()) {
+            jsonText = params.INLINE_JSON.trim()
+            echo "Using INLINE_JSON from job parameters"
+          } else {
+            jsonText = readFile(params.REPO_JSON_PATH)
+            echo "Using repo JSON file: ${params.REPO_JSON_PATH}"
+          }
+
+          def cfg = new JsonSlurperClassic().parseText(jsonText)
+
+          int startPort = (cfg.start_port ?: 9000) as Integer
+          List<String> tenants = (cfg.tenants ?: []).collect { it.toString() }
+
+          if (tenants.isEmpty()) {
+            error("Tenant list kosong. Pastikan JSON punya field 'tenants' array.")
+          }
+
+          tenants.each { t ->
+            if (!(t ==~ /^[A-Za-z0-9_-]+$/)) {
+              error("Nama tenant tidak valid: '${t}'. Pakai hanya huruf/angka/_/-")
+            }
+          }
+
+          env.START_PORT = startPort.toString() // (opsional, nggak dipakai di remove)
+          env.TENANT_ARGS = tenants.collect { "'${it}'" }.join(' ')
+        }
+      }
+    }
+
+    stage('Remove') {
       steps {
         script {
           if (isUnix()) {
-            sh '''
+            sh """
               set -eux
               chmod +x ./remove_tenant.sh
-
-              if [ -n "${INLINE_JSON:-}" ]; then
-                TENANTS=$(python - <<'PY'
-                import os, json
-                cfg=json.loads(os.environ["INLINE_JSON"])
-                print(" ".join(cfg.get("tenants", [])))
-                PY
-                )
-              else
-                TENANTS=$(python - <<'PY'
-                import json, os
-                path=os.environ.get("REPO_JSON_PATH","tenants.json")
-                cfg=json.load(open(path))
-                print(" ".join(cfg.get("tenants", [])))
-                PY
-                )
-              fi
-
-              if [ -z "$TENANTS" ]; then
-                echo "Tenant list kosong"
-                exit 1
-              fi
-
-              ./remove_tenant.sh $TENANTS
-            '''
+              ./remove_tenant.sh ${env.TENANT_ARGS}
+            """
           } else {
-            powershell '''
-              $json = $env:INLINE_JSON
-
-              if (![string]::IsNullOrWhiteSpace($json)) {
-                $cfg = $json | ConvertFrom-Json
-              } else {
-                $path = $env:REPO_JSON_PATH
-                $cfg = Get-Content $path -Raw | ConvertFrom-Json
-              }
-
-              $tenants = @($cfg.tenants)
-              if ($tenants.Count -eq 0) { throw "Tenant list kosong" }
-
+            // Windows: jalankan lewat bash (Git Bash / WSL). Ini asumsi kamu punya bash di PATH.
+            powershell """
+              \$tenants = @(${env.TENANT_ARGS})
               if (!(Test-Path .\\remove_tenant.sh)) { throw "remove_tenant.sh not found" }
-
-              bash -lc "chmod +x ./remove_tenant.sh && ./remove_tenant.sh $($tenants -join ' ')"
-            '''
+              bash -lc "chmod +x ./remove_tenant.sh && ./remove_tenant.sh \$($tenants -join ' ')"
+            """
           }
         }
       }
