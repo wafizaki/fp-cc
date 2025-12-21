@@ -38,14 +38,19 @@ func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.
 	filesPath := filepath.Join(tenantDir, "files")
 	configPath := filepath.Join(tenantDir, "config")
 
-	if err := os.MkdirAll(filesPath, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create files directory: %w", err)
-	}
+    // Create directories with proper permissions (0777 allows container user to write)
+    if err := os.MkdirAll(filesPath, 0777); err != nil {
+        return nil, fmt.Errorf("failed to create files directory: %w", err)
+    }
 
-	if err := os.MkdirAll(configPath, 0755); err != nil {
-		os.RemoveAll(tenantDir)
-		return nil, fmt.Errorf("failed to create config directory: %w", err)
-	}
+    if err := os.MkdirAll(configPath, 0777); err != nil {
+        os.RemoveAll(tenantDir)
+        return nil, fmt.Errorf("failed to create config directory: %w", err)
+    }
+
+    // Ensure directories are writable by all users (for container access)
+    os.Chmod(filesPath, 0777)
+    os.Chmod(configPath, 0777)
 
 	containerName := fmt.Sprintf("files_%s", name)
 	volumeName := fmt.Sprintf("%s_settings_vol", name)
