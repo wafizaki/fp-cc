@@ -76,8 +76,8 @@ func main() {
 			tenants.GET("/:name", tenantHandler.GetTenant)
 			tenants.DELETE("/:name", tenantHandler.DeleteTenant)
 
-			tenants.POST("/:name/stop", tenantHandler.StopContainer)
-			tenants.POST("/:name/start", tenantHandler.StartContainer)
+			tenants.PUT("/:name/stop", tenantHandler.StopContainer)
+			tenants.PUT("/:name/start", tenantHandler.StartContainer)
 		}
 	}
 
@@ -91,8 +91,8 @@ func main() {
 	log.Println("  GET    /api/tenants")
 	log.Println("  GET    /api/tenants/:name")
 	log.Println("  DELETE /api/tenants/:name")
-	log.Println("  POST   /api/tenants/:name/stop")
-	log.Println("  POST   /api/tenants/:name/start")
+	log.Println("  PUT    /api/tenants/:name/stop")
+	log.Println("  PUT    /api/tenants/:name/start")
 
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
