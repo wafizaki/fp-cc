@@ -51,6 +51,7 @@ func (dc *DockerClient) CreateAndStartContainer(ctx context.Context, tenantName 
 		ExposedPorts: nat.PortSet{
 			containerPort: struct{}{},
 		},
+		User: "0:0",
 	}
 
 	hostConfig := &container.HostConfig{

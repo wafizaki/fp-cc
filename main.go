@@ -57,6 +57,10 @@ func main() {
 		c.Next()
 	})
 
+	router.StaticFile("/", "./frontend/index.html")
+    router.Static("/frontend", "./frontend")
+
+
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"success": true,
