@@ -22,3 +22,15 @@ jobs:
 
       - name: Build
         run: go build main.go
+
+      - name: Build Docker Image
+        run: docker build -t filebrowser-admin:latest .
+
+      - name: Cleaning Old Container
+        run: |
+          docker stop filebrowser-admin || true
+          docker rm filebrowser-admin || true
+
+      - name: Run New Container
+        run: |
+          docker run -d --name filebrowser-admin -p 8081:8081 filebrowser-admin:latest
