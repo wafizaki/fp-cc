@@ -1,15 +1,41 @@
-# Python Virtual Environment
-venv/
-env/
-.env
+# Binaries
+tenant-manager
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Python Cache
-__pycache__/
-*.pyc
+# Test binary
+*.test
 
-# Docker Data & Tenant Data (PENTING: Jangan di-commit)
+# Output of the go coverage tool
+*.out
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+filebrowser_db/
+
+# Tenant directories
 tenants/
 
-# IDE settings (VSCode, etc)
-.vscode/
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE files
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
