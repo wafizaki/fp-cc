@@ -22,11 +22,11 @@ pipeline {
       steps {
         sh '''
           export PATH=/usr/local/go/bin:$PATH
-          pkill -f "./main" || true   # Kill any running main process
-          export SERVER_PORT=8081
-          nohup ./main &
+          docker stop go-app || true
+          docker rm go-app || true
+          docker build -t go-app:latest .
+          docker run -d --name go-app -p 8081:8081 go-app:latest
         '''
-     
       }
     }
   }
