@@ -15,9 +15,11 @@ type Tenant struct {
 	VolumeName    string    `json:"volume_name"`
 	Status        string    `json:"status"`
 	URL           string    `json:"url"`
+	Username      string    `json:"username,omitempty"`
 	Password      string    `json:"password,omitempty"` // Only populated when fetched from logs
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
+	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
 }
 
 type CreateTenantRequest struct {

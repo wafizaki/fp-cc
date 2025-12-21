@@ -24,6 +24,11 @@ func NewTenantService(dockerClient *utils.DockerClient, baseDir string) *TenantS
 }
 
 func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.Tenant, error) {
+	_, err := database.GetTenantByName(name)
+	if err == nil {
+		return nil, fmt.Errorf("tenant already exists")
+	}
+
 	port, err := database.GetNextAvailablePort()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get next available port: %w", err)
@@ -79,6 +84,7 @@ func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.
 		VolumeName:    volumeName,
 		Status:        models.StatusRunning,
 		URL:           fmt.Sprintf("http://localhost:%d", port),
+		Username:      "admin",
 		Password:      password,
 		CreatedAt:     dbTenant.CreatedAt,
 		UpdatedAt:     dbTenant.UpdatedAt,
@@ -121,6 +127,7 @@ func (s *TenantService) ListTenants(ctx context.Context, page, perPage int) ([]m
 			VolumeName:    dbTenant.VolumeName,
 			Status:        status,
 			URL:           fmt.Sprintf("http://localhost:%d", dbTenant.Port),
+			Username:      "admin",
 			CreatedAt:     dbTenant.CreatedAt,
 			UpdatedAt:     dbTenant.UpdatedAt,
 		}
@@ -168,6 +175,7 @@ func (s *TenantService) GetTenant(ctx context.Context, name string) (*models.Ten
 		VolumeName:    dbTenant.VolumeName,
 		Status:        status,
 		URL:           fmt.Sprintf("http://localhost:%d", dbTenant.Port),
+		Username:      "admin",
 		Password:      password,
 		CreatedAt:     dbTenant.CreatedAt,
 		UpdatedAt:     dbTenant.UpdatedAt,
