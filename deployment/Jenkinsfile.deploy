@@ -1,79 +1,35 @@
-import groovy.json.JsonSlurperClassic
-
 pipeline {
   agent any
-
-  parameters {
-    text(
-      name: 'INLINE_JSON',
-      defaultValue: '',
-      description: 'Kosongkan untuk pakai tenants.json dari repo (webhook). Isi JSON di sini untuk deploy manual.'
-    )
-    string(
-      name: 'REPO_JSON_PATH',
-      defaultValue: 'tenants.json',
-      description: 'Path tenants.json di repo (dipakai saat INLINE_JSON kosong)'
-    )
-  }
-
   stages {
-
-    stage('Load tenants config') {
+    stage('Checkout') {
       steps {
-        script {
-          String jsonText
-          if (params.INLINE_JSON?.trim()) {
-            jsonText = params.INLINE_JSON.trim()
-            echo "Using INLINE_JSON from job parameters"
-          } else {
-            jsonText = readFile(params.REPO_JSON_PATH)
-            echo "Using repo JSON file: ${params.REPO_JSON_PATH}"
-          }
-
-          def cfg = new JsonSlurperClassic().parseText(jsonText)
-
-          // Expect:
-          // { "start_port": 9000, "tenants": ["budi","siti"] }
-          int startPort = (cfg.start_port ?: 9000) as Integer
-          List<String> tenants = (cfg.tenants ?: []).collect { it.toString() }
-
-          if (tenants.isEmpty()) {
-            error("Tenant list kosong. Pastikan JSON punya field 'tenants' array.")
-          }
-
-          // Validasi nama tenant biar aman untuk container/volume name
-          tenants.each { t ->
-            if (!(t ==~ /^[A-Za-z0-9_-]+$/)) {
-              error("Nama tenant tidak valid: '${t}'. Pakai hanya huruf/angka/_/-")
-            }
-          }
-
-          // Simpan untuk stage berikutnya
-          env.START_PORT = startPort.toString()
-          env.TENANT_ARGS = tenants.collect { "'${it}'" }.join(' ')
-        }
+        git url: 'https://github.com/wafizaki/fp-cc.git', branch: 'jenkins-deployment'
       }
     }
-
+    stage('Build') {
+      steps {
+        sh '''
+          export PATH=/usr/local/go/bin:$PATH
+          export SERVER_PORT=8081
+          rm -f main
+          go version
+          go mod download
+          go build -o main
+        '''
+      }
+    }
     stage('Deploy') {
       steps {
-        script {
-          if (isUnix()) {
-            sh """
-              set -eux
-              chmod +x ./deploy_tenant.sh
-              ./deploy_tenant.sh --start-port ${env.START_PORT} ${env.TENANT_ARGS}
-            """
-          } else {
-            // Windows: pakai wrapper PowerShell yang kamu rencanakan
-            powershell """
-              \$startPort = ${env.START_PORT}
-              \$tenants = @(${env.TENANT_ARGS})
-              if (!(Test-Path .\\deploy_tenant.ps1)) { throw "deploy_tenant.ps1 not found" }
-              .\\deploy_tenant.ps1 -StartPort \$startPort @\$tenants
-            """
-          }
-        }
+        sh '''
+          export PATH=/usr/local/go/bin:$PATH
+          docker stop go-app || true
+          docker rm go-app || true
+          docker build -t go-app:latest .
+          docker run -d --name go-app \
+            -p 8082:8081 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            go-app:latest
+        '''
       }
     }
   }

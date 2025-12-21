@@ -57,10 +57,7 @@ func main() {
 		c.Next()
 	})
 
-	router.StaticFile("/", "./frontend/index.html")
-    router.Static("/frontend", "./frontend")
-
-
+	// API routes first
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"success": true,
@@ -84,6 +81,14 @@ func main() {
 			tenants.PUT("/:name/start", tenantHandler.StartContainer)
 		}
 	}
+
+	// Serve frontend - root path for index.html
+	router.GET("/", func(c *gin.Context) {
+		c.File("./frontend/index.html")
+	})
+	
+	// Serve other frontend static files
+	router.Static("/static", "./frontend")
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Starting Tenant Management API server on %s", addr)
