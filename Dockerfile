@@ -12,5 +12,6 @@ FROM alpine:latest
 WORKDIR /app
 RUN apk add --no-cache sqlite-libs
 COPY --from=build /app/main .
+COPY --from=build /app/frontend ./frontend
 EXPOSE 8081
 CMD ["./main"]
