@@ -8,8 +8,12 @@ pipeline {
     }
     stage('Build') {
       steps {
-        sh 'go mod download'
-        sh 'go build -o main'
+        sh '''
+          export PATH=/usr/local/go/bin:$PATH
+          go version
+          go mod download
+          go build -o main
+        '''
       }
     }
     stage('Deploy') {
