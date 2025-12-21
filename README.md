@@ -5,6 +5,7 @@ Script **Bash** sederhana untuk men-deploy layanan **FileBrowser** secara otomat
 ## Prasyarat (Prerequisites)
 
 Pastikan sistem operasi Anda (USAHAKAN LINUX JANGAN WSL) sudah terinstall:
+
 1.  **Docker Engine** (Pastikan service Docker sudah berjalan)
 2.  User Linux Anda sudah dimasukkan ke grup docker (`sudo usermod -aG docker $USER`).
 3.  **Bash** (umumnya sudah ada di Linux)
@@ -21,6 +22,7 @@ Pastikan sistem operasi Anda (USAHAKAN LINUX JANGAN WSL) sudah terinstall:
 ## Cara Menjalankan
 
 ### 1. Deploy Tenant Baru
+
 Gunakan script bash berikut untuk membuat tenant baru:
 
 ```bash
@@ -28,15 +30,19 @@ Gunakan script bash berikut untuk membuat tenant baru:
 ```
 
 Contoh:
+
 ```bash
 ./deploy_tenant.sh budi siti tono
 ```
+
 Atau dengan port custom:
+
 ```bash
 ./deploy_tenant.sh --start-port 9000 budi siti tono
 ```
 
 ### 2. Akses Aplikasi
+
 Buka browser dan akses alamat berikut sesuai urutan deploy:
 
 Tenant 1: http://localhost:8000
@@ -48,6 +54,7 @@ Tenant 2: http://localhost:8001
 Password admin akan muncul di log terminal setelah deploy.
 
 ### 3. Menghapus Tenant
+
 Untuk menghapus container, volume, dan folder tenant:
 
 ```bash
@@ -55,11 +62,11 @@ Untuk menghapus container, volume, dan folder tenant:
 ```
 
 Contoh:
+
 ```bash
 ./remove_tenant.sh budi siti tono
 ```
 
 ## Catatan Penting
-- Folder `tenants/` dan seluruh isinya **jangan di-commit ke git** (sudah ada di `.gitignore`).
-- Jika ingin password admin baru, hapus volume docker tenant terkait sebelum deploy ulang (otomatis dilakukan oleh `remove_tenant.sh`).
-- Script ini tidak lagi membutuhkan Python sama sekali.
+
+- Segera ganti password admin melalui filebrowser
