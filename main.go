@@ -57,8 +57,7 @@ func main() {
 		c.Next()
 	})
 
-	router.StaticFile("/", "./frontend/index.html")
-    router.Static("/frontend", "./frontend")
+    router.Static("/", "./frontend")
 
 
 	router.GET("/health", func(c *gin.Context) {
