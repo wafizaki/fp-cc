@@ -25,7 +25,10 @@ pipeline {
           docker stop go-app || true
           docker rm go-app || true
           docker build -t go-app:latest .
-          docker run -d --name go-app -p 9002:8081 go-app:latest
+          docker run -d --name go-app \
+            -p 9002:8081 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            go-app:latest
         '''
       }
     }
