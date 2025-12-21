@@ -57,9 +57,6 @@ func main() {
 		c.Next()
 	})
 
-    router.Static("/", "./frontend")
-
-
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"success": true,
@@ -83,6 +80,8 @@ func main() {
 			tenants.PUT("/:name/start", tenantHandler.StartContainer)
 		}
 	}
+
+	router.Static("/", "./frontend")
 
 	addr := fmt.Sprintf(":%s", cfg.ServerPort)
 	log.Printf("Starting Tenant Management API server on %s", addr)
