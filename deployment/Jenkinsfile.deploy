@@ -11,6 +11,7 @@ pipeline {
         sh '''
           export PATH=/usr/local/go/bin:$PATH
           export SERVER_PORT=8081
+          rm -f main
           go version
           go mod download
           go build -o main
@@ -19,8 +20,12 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        sh 'pkill main || true'
-        sh 'nohup ./main &'
+        sh '''
+          export PATH=/usr/local/go/bin:$PATH
+          pkill -f "./main" || true   # Kill any running main process
+          export SERVER_PORT=8081
+          nohup ./main &
+        '''
      
       }
     }
