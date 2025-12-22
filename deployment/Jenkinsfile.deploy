@@ -32,7 +32,7 @@ pipeline {
           docker run -d --name go-app \
             -p 8081:8081 \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v $(pwd)/monitoring/targets_filebrowser.json:/app/monitoring/targets_filebrowser.json \
+            -v "$WORKSPACE/monitoring/targets_filebrowser.json:/app/monitoring/targets_filebrowser.json" \
             go-app:latest
         '''
       }
