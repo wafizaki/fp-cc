@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -23,6 +24,52 @@ func NewTenantService(dockerClient *utils.DockerClient, baseDir string) *TenantS
 	}
 }
 
+type PrometheusTargets struct {
+	Targets []string          `json:"targets"`
+	Labels  map[string]string `json:"labels"`
+}
+
+func (s *TenantService) UpdatePrometheusTargets() error {
+	dbTenants, _, err := database.GetAllTenants(1, 1000)
+	if err != nil {
+		return fmt.Errorf("failed to get tenants: %w", err)
+	}
+
+	targets := make([]string, 0)
+	for _, dbTenant := range dbTenants {
+		if dbTenant.Status == models.StatusRunning {
+			target := fmt.Sprintf("http://%s:80/", dbTenant.ContainerName)
+			targets = append(targets, target)
+		}
+	}
+
+	promTargets := []PrometheusTargets{
+		{
+			Targets: targets,
+			Labels: map[string]string{
+				"service": "filebrowser",
+			},
+		},
+	}
+
+	monitoringDir := filepath.Join(s.baseDir, "monitoring")
+	if err := os.MkdirAll(monitoringDir, 0755); err != nil {
+		return fmt.Errorf("failed to create monitoring directory: %w", err)
+	}
+
+	targetsFile := filepath.Join(monitoringDir, "targets_filebrowser.json")
+	jsonData, err := json.MarshalIndent(promTargets, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal targets: %w", err)
+	}
+
+	if err := os.WriteFile(targetsFile, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write targets file: %w", err)
+	}
+
+	return nil
+}
+
 func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.Tenant, error) {
 	_, err := database.GetTenantByName(name)
 	if err == nil {
@@ -38,19 +85,17 @@ func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.
 	filesPath := filepath.Join(tenantDir, "files")
 	configPath := filepath.Join(tenantDir, "config")
 
-    // Create directories with proper permissions (0777 allows container user to write)
-    if err := os.MkdirAll(filesPath, 0777); err != nil {
-        return nil, fmt.Errorf("failed to create files directory: %w", err)
-    }
+	if err := os.MkdirAll(filesPath, 0777); err != nil {
+		return nil, fmt.Errorf("failed to create files directory: %w", err)
+	}
 
-    if err := os.MkdirAll(configPath, 0777); err != nil {
-        os.RemoveAll(tenantDir)
-        return nil, fmt.Errorf("failed to create config directory: %w", err)
-    }
+	if err := os.MkdirAll(configPath, 0777); err != nil {
+		os.RemoveAll(tenantDir)
+		return nil, fmt.Errorf("failed to create config directory: %w", err)
+	}
 
-    // Ensure directories are writable by all users (for container access)
-    os.Chmod(filesPath, 0777)
-    os.Chmod(configPath, 0777)
+	os.Chmod(filesPath, 0777)
+	os.Chmod(configPath, 0777)
 
 	containerName := fmt.Sprintf("files_%s", name)
 	volumeName := fmt.Sprintf("%s_settings_vol", name)
@@ -79,6 +124,10 @@ func (s *TenantService) CreateTenant(ctx context.Context, name string) (*models.
 		s.dockerClient.RemoveVolume(ctx, volumeName)
 		os.RemoveAll(tenantDir)
 		return nil, fmt.Errorf("failed to save tenant to database: %w", err)
+	}
+
+	if err := s.UpdatePrometheusTargets(); err != nil {
+		fmt.Printf("Warning: failed to update Prometheus targets: %v\n", err)
 	}
 
 	tenant := &models.Tenant{
@@ -141,9 +190,9 @@ func (s *TenantService) ListTenants(ctx context.Context, page, perPage int) ([]m
 
 	totalPages := int(math.Ceil(float64(total) / float64(perPage)))
 	meta := models.PaginationMeta{
-		Total:      total,
-		Page:       page,
-		PerPage:    perPage,
+		Total:   total,
+		Page:    page,
+		PerPage: perPage,
 		MaxPage: totalPages,
 	}
 
@@ -254,6 +303,9 @@ func (s *TenantService) DeleteTenant(ctx context.Context, name string) error {
 		return fmt.Errorf("failed to delete tenant from database: %w", err)
 	}
 
+	if err := s.UpdatePrometheusTargets(); err != nil {
+		fmt.Printf("Warning: failed to update Prometheus targets: %v\n", err)
+	}
+
 	return nil
 }
-

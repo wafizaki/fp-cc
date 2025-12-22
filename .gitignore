@@ -39,3 +39,6 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# Monitoring
+monitoring/targets_filebrowser.json
