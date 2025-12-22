@@ -33,7 +33,7 @@ pipeline {
           docker run -d --name go-app \
             -p 8081:8081 \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$WORKSPACE/monitoring:/app/monitoring" \
+            -v "$(pwd)/monitoring:/app/monitoring" \
             go-app:latest
         '''
       }
