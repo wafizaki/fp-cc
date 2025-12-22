@@ -30,12 +30,19 @@ pipeline {
           docker rm go-app || true
           docker build -t go-app:latest .
           docker network create monitoring || true
+          docker compose up -d
           docker run -d --name go-app \
             -p 8081:8081 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "$(pwd)/monitoring:/app/monitoring" \
             go-app:latest
         '''
+      }
+    }
+    stage('List Files') {
+      steps {
+        sh 'ls -lah "$WORKSPACE"'
+        sh 'ls -lah "$WORKSPACE/monitoring"'
       }
     }
   }
