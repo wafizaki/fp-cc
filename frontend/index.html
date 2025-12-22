@@ -298,7 +298,7 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🗂️ FileBrowser Tenant Manager</h1>
+        <h1>🗂️ FileBrowser Tenant Manager 2.0</h1>
         <p>Create and manage isolated FileBrowser instances</p>
       </div>
 
@@ -483,7 +483,7 @@
                     `${API_BASE}/tenants/${tenant.name}`
                   );
                   const detailResult = await detailResponse.json();
-                  
+
                   if (detailResult.success && detailResult.data) {
                     // Merge detail data (username, password) with original tenant data
                     return {
@@ -494,13 +494,18 @@
                   }
                   return tenant;
                 } catch (error) {
-                  console.error(`Error loading details for ${tenant.name}:`, error);
+                  console.error(
+                    `Error loading details for ${tenant.name}:`,
+                    error
+                  );
                   return tenant;
                 }
               })
             );
-            
-            tenantsList.innerHTML = tenantsWithDetails.map(createTenantCard).join("");
+
+            tenantsList.innerHTML = tenantsWithDetails
+              .map(createTenantCard)
+              .join("");
           }
 
           // Pagination
