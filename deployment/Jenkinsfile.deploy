@@ -26,11 +26,13 @@ pipeline {
       steps {
         sh '''
           export PATH=/usr/local/go/bin:$PATH
+          ls -lah "$WORKSPACE"
+          ls -lah "$WORKSPACE/monitoring"
           docker stop go-app || true
           docker rm go-app || true
           docker build -t go-app:latest .
           docker network create monitoring || true
-          docker compose up -d
+          docker compose -f monitoring/docker-compose.yml up -d
           docker run -d --name go-app \
             -p 8081:8081 \
             -v /var/run/docker.sock:/var/run/docker.sock \
@@ -39,11 +41,6 @@ pipeline {
         '''
       }
     }
-    stage('List Files') {
-      steps {
-        sh 'ls -lah "$WORKSPACE"'
-        sh 'ls -lah "$WORKSPACE/monitoring"'
-      }
-    }
+  
   }
 }
