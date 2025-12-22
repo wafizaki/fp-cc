@@ -63,6 +63,7 @@ func (dc *DockerClient) CreateAndStartContainer(ctx context.Context, tenantName 
 			fmt.Sprintf("%s:/database:rw", volumeName),
 			fmt.Sprintf("%s:/config:rw", configPath),
 		},
+		NetworkMode: container.NetworkMode("monitoring"),
 		RestartPolicy: container.RestartPolicy{
 			Name: container.RestartPolicyUnlessStopped,
 		},
@@ -188,7 +189,7 @@ func (dc *DockerClient) GetContainerLogs(ctx context.Context, containerName stri
 	}
 
 	password := strings.TrimSpace(matches[1])
-	
+
 	return password, nil
 }
 
