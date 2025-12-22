@@ -475,7 +475,32 @@
                         </div>
                     `;
           } else {
-            tenantsList.innerHTML = result.data.map(createTenantCard).join("");
+            // Fetch detail for each tenant to get username and password
+            const tenantsWithDetails = await Promise.all(
+              result.data.map(async (tenant) => {
+                try {
+                  const detailResponse = await fetch(
+                    `${API_BASE}/tenants/${tenant.name}`
+                  );
+                  const detailResult = await detailResponse.json();
+                  
+                  if (detailResult.success && detailResult.data) {
+                    // Merge detail data (username, password) with original tenant data
+                    return {
+                      ...tenant,
+                      username: detailResult.data.username,
+                      password: detailResult.data.password,
+                    };
+                  }
+                  return tenant;
+                } catch (error) {
+                  console.error(`Error loading details for ${tenant.name}:`, error);
+                  return tenant;
+                }
+              })
+            );
+            
+            tenantsList.innerHTML = tenantsWithDetails.map(createTenantCard).join("");
           }
 
           // Pagination
